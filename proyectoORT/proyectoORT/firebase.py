@@ -15,7 +15,8 @@ from requests.models import requote_uri
 
 # Instantiate Flask extensions
 if not os.path.isfile(settings.FIREBASE_CONFIG_FILE):
-    with open('settings.FIREBASE_CONFIG_FILE', 'w') as fb_config_file:
+    print("Creatinf Firebase config file")
+    with open(settings.FIREBASE_CONFIG_FILE, 'w') as fb_config_file:
         fb_config_file.write(os.environ['FB_ADMIN_CONFIG'])
 cred = credentials.Certificate(settings.FIREBASE_CONFIG_FILE)
 firebase = firebase_admin.initialize_app(cred)
