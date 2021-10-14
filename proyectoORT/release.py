@@ -12,6 +12,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proyectoORT.settings')
 print("Applying migrations")
 execute_from_command_line(['manage.py', 'migrate'])
 
+print(os.environ['CREATE_SUPERUSER'])
 if os.environ['CREATE_SUPERUSER']:
     print("Creating superuser")
     execute_from_command_line(['manage.py', 'createsuperuser', '--no-input', '--username', os.environ['ADMIN_USERNAME'], '--email', 'noemail@example.com'])
