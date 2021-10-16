@@ -1,4 +1,4 @@
-from django.contrib.auth import models
+from django.contrib.auth import models, authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, BadRequest, ObjectDoesNotExist
 from democracia.models.auth import Ciudadano
@@ -83,6 +83,13 @@ def login_required():
                 if auth_method == 'Token':
                     fb_user = auth.verify_id_token(value)
                     request.user = get_user_from_firebase(fb_user)
+                elif auth_method == 'Basic':
+                    username, password = base64.b64decode(value).decode('utf-8').split(':')
+                    user = authenticate(request, username=username, password=password)
+                    if user is not None:
+                        request.user = user
+                    else:
+                        raise PermissionDenied(f'Username or password invalid')
                 else:
                     raise BadRequest(f'Authentication method not recognized {auth_method}')
             return view_func(request, *args, **kwargs)

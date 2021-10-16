@@ -1,5 +1,6 @@
+from json.decoder import JSONDecodeError
 from django.http import HttpResponse
-from django.http.response import JsonResponse
+from django.http.response import HttpResponseNotAllowed, JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
 from .models.democracia import Partido, Distrito, Idea
@@ -9,6 +10,14 @@ import json
 @login_required()
 def index(request):
     return HttpResponse("Hello {}".format(request.user.username))
+
+@csrf_exempt
+def register(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        ciudadano = Ciudadano.register_new(data)
+        return JsonResponse(ciudadano.serialize())
+    return HttpResponseNotAllowed('Register must be POST')
 
 @csrf_exempt
 @login_required()

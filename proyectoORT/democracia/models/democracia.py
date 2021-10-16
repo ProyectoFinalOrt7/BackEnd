@@ -30,7 +30,7 @@ class Idea(models.Model):
     contenido = models.TextField(max_length=1024)
     votosPositivos = models.IntegerField(default=0)
     votosNegativos = models.IntegerField(default=0)
-    categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None)
+    categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None, blank=True)
     
     def total_votos(self):
         return self.votosNegativos + self.votosPositivos
