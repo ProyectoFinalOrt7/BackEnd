@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.http.response import JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
-from .models.democracia import Partido, Distrito
+from .models.democracia import Partido, Distrito, Idea
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -30,3 +30,12 @@ def user_detail(request):
                 ciudadano.distrito = None
         ciudadano.save()
     return JsonResponse(ciudadano.serialize())
+
+@csrf_exempt
+@login_required()
+def top_ideas(request):
+    ideas = list(Idea.objects.all())
+    ideas.sort(key=lambda x: x.total_votos(), reverse=True)
+    ideas_top = ideas[:10]
+    return JsonResponse([idea.serialize() for idea in ideas_top], safe=False)
+

@@ -10,7 +10,7 @@ django-heroku==0.3.1
 firebase-admin==5.0.2
 google-api-core==1.31.2
 google-api-python-client==2.20.0
-google-auth==2.0.2
+google-auth==1.25.0
 google-auth-httplib2==0.1.0
 google-cloud-core==2.0.0
 google-cloud-firestore==2.3.1
