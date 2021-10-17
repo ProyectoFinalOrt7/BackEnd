@@ -43,7 +43,7 @@ class Idea(models.Model):
             'contenido': self.contenido,
             'votosPositivos': self.votosPositivos,
             'votosNegativos': self.votosNegativos,
-            'categoria': self.categoria.serialize()
+            'categoria': self.categoria.serialize() if self.categoria else None
         }
 
 class Categoria(models.Model):

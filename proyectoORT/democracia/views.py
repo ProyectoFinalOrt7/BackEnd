@@ -48,3 +48,13 @@ def top_ideas(request):
     ideas_top = ideas[:10]
     return JsonResponse([idea.serialize() for idea in ideas_top], safe=False)
 
+@csrf_exempt
+@login_required()
+def search_ideas(request):
+    ideas_search = []
+    busqueda = request.GET.get("filtro").lower()
+    ideas = list(Idea.objects.all())
+    for idea in ideas:
+        if busqueda in idea.titulo.lower():
+            ideas_search.append(idea)
+    return JsonResponse([idea.serialize() for idea in ideas_search], safe=False)
