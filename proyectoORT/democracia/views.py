@@ -58,3 +58,13 @@ def search_ideas(request):
         if busqueda in idea.titulo.lower():
             ideas_search.append(idea)
     return JsonResponse([idea.serialize() for idea in ideas_search], safe=False)
+
+
+def partidos(request):
+    partidos = Partido.objects.all()
+    return JsonResponse([partido.serialize() for partido in partidos], safe=False)
+
+
+def distritos(request):
+    distritos = Distrito.objects.all()
+    return JsonResponse([distritos.serialize() for distritos in distritos], safe=False)
