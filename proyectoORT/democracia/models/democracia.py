@@ -45,9 +45,15 @@ class Idea(models.Model):
             'votosNegativos': self.votosNegativos,
             'categoria': self.categoria.serialize() if self.categoria else None
         }
+    
+    def __str__(self):
+        return "[{}] {} {}/{}".format(self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'), self.titulo, self.votosPositivos, self.votosNegativos)
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=64)
 
     def serialize(self):
+        return self.nombre
+
+    def __str__(self):
         return self.nombre
