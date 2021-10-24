@@ -10,4 +10,5 @@ urlpatterns = [
     path('ideas/search/', views.search_ideas,name='search_ideas'),
     path('partidos/', views.partidos,name='partidos'),
     path('distritos/', views.distritos,name='distritos'),
+    path('categorias/', views.categorias,name='categorias'),
 ]
