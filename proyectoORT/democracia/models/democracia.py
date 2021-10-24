@@ -31,6 +31,7 @@ class Idea(models.Model):
     votosPositivos = models.IntegerField(default=0)
     votosNegativos = models.IntegerField(default=0)
     categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None, blank=True)
+    autores = models.ManyToManyField('Ciudadano')
     
     def total_votos(self):
         return self.votosNegativos + self.votosPositivos
