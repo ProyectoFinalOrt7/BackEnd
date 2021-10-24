@@ -6,6 +6,7 @@ from .models.auth import Ciudadano
 from .models.democracia import Categoria, Partido, Distrito, Idea
 from django.views.decorators.csrf import csrf_exempt
 import json
+import datetime
 
 @login_required()
 def index(request):
@@ -60,6 +61,23 @@ def search_ideas(request):
 
     return JsonResponse([idea.serialize() for idea in ideas], safe=False)
 
+@csrf_exempt
+@login_required()
+def crear_idea(request):
+    if request.method in ['POST']:
+        data = json.loads(request.body)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        categorias = Categoria.objects.all()
+        categoria = [categoria for categoria in categorias if categoria.nombre.lower() == data.get("categoria").lower()][0]
+        idea = Idea (   titulo = data.get('titulo'), 
+                        fechaPublicacion = datetime.datetime.now(), 
+                        contenido = data.get('contenido'),
+                        categoria = categoria
+                    )
+        idea.save()
+        idea.autores.add(ciudadano)
+        idea.save()
+        return JsonResponse(idea.serialize())
 
 def partidos(request):
     partidos = Partido.objects.all()
