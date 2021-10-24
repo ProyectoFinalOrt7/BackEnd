@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
-from .models.democracia import Partido, Distrito, Idea
+from .models.democracia import Categoria, Partido, Distrito, Idea
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -51,13 +51,14 @@ def top_ideas(request):
 @csrf_exempt
 @login_required()
 def search_ideas(request):
-    ideas_search = []
-    busqueda = request.GET.get("filtro").lower()
     ideas = list(Idea.objects.all())
-    for idea in ideas:
-        if busqueda in idea.titulo.lower():
-            ideas_search.append(idea)
-    return JsonResponse([idea.serialize() for idea in ideas_search], safe=False)
+    if request.GET.get("filtro"):
+        ideas = [idea for idea in ideas if request.GET.get("filtro").lower() in idea.titulo.lower()]
+    
+    if request.GET.get("categoria"):
+        ideas = [idea for idea in ideas if idea.categoria.nombre.lower() == request.GET.get("categoria").lower()]
+
+    return JsonResponse([idea.serialize() for idea in ideas], safe=False)
 
 
 def partidos(request):
@@ -67,4 +68,8 @@ def partidos(request):
 
 def distritos(request):
     distritos = Distrito.objects.all()
-    return JsonResponse([distritos.serialize() for distritos in distritos], safe=False)
+    return JsonResponse([distrito.serialize() for distrito in distritos], safe=False)
+
+def categorias(request):
+    categorias = Categoria.objects.all()
+    return JsonResponse([categoria.serialize() for categoria in categorias], safe=False)

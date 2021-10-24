@@ -43,7 +43,7 @@ class Idea(models.Model):
             'contenido': self.contenido,
             'votosPositivos': self.votosPositivos,
             'votosNegativos': self.votosNegativos,
-            'categoria': self.categoria.serialize() if self.categoria else None
+            'categoria': self.categoria.nombre if self.categoria else None
         }
     
     def __str__(self):
@@ -53,7 +53,10 @@ class Categoria(models.Model):
     nombre = models.CharField(max_length=64)
 
     def serialize(self):
-        return self.nombre
+        return {
+            'id': self.pk,
+            'nombre': self.nombre
+        }
 
     def __str__(self):
         return self.nombre
