@@ -59,6 +59,9 @@ def search_ideas(request):
     if request.GET.get("categoria"):
         ideas = [idea for idea in ideas if idea.categoria.nombre.lower() == request.GET.get("categoria").lower()]
 
+    if request.GET.get("propias") and request.GET.get("propias") == 'true':
+        ideas = [idea for idea in ideas if idea.autores.filter(email=request.user.username).exists()]
+
     return JsonResponse([idea.serialize() for idea in ideas], safe=False)
 
 @csrf_exempt
