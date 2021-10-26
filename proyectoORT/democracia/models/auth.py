@@ -17,7 +17,13 @@ class Ciudadano(models.Model):
     verificado = models.BooleanField(default=False)
     legislador = models.BooleanField(default=False)
 
-    def serialize(self):
+    def serialize(self, compact=False):
+        if compact:
+            return {
+            'id': self.pk,
+            'nombre': self.nombre,
+            'legislador': self.legislador
+        }
         return {
             'id': self.pk,
             'nombre': self.nombre,

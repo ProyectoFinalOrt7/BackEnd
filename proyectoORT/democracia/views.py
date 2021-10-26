@@ -47,7 +47,7 @@ def top_ideas(request):
     ideas = list(Idea.objects.all())
     ideas.sort(key=lambda x: x.total_votos(), reverse=True)
     ideas_top = ideas[:10]
-    return JsonResponse([idea.serialize() for idea in ideas_top], safe=False)
+    return JsonResponse([idea.serialize(request=request) for idea in ideas_top], safe=False)
 
 @csrf_exempt
 @login_required()
@@ -62,7 +62,7 @@ def search_ideas(request):
     if request.GET.get("propias") and request.GET.get("propias") == 'true':
         ideas = [idea for idea in ideas if idea.autores.filter(email=request.user.username).exists()]
 
-    return JsonResponse([idea.serialize() for idea in ideas], safe=False)
+    return JsonResponse([idea.serialize(request=request) for idea in ideas], safe=False)
 
 @csrf_exempt
 @login_required()
@@ -78,9 +78,9 @@ def crear_idea(request):
                         categoria = categoria
                     )
         idea.save()
-        idea.autores.add(ciudadano)
+        idea.agregar_autor(ciudadano)
         idea.save()
-        return JsonResponse(idea.serialize())
+        return JsonResponse(idea.serialize(request=request))
 
 def partidos(request):
     partidos = Partido.objects.all()
