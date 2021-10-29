@@ -3,8 +3,9 @@ from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
-from .models.democracia import Categoria, Partido, Distrito, Idea
+from .models.democracia import Categoria, Partido, Distrito, Idea, Voto
 from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import BadRequest, ObjectDoesNotExist
 import json
 import datetime
 
@@ -81,6 +82,60 @@ def crear_idea(request):
         idea.agregar_autor(ciudadano)
         idea.save()
         return JsonResponse(idea.serialize(request=request))
+
+
+@csrf_exempt
+@login_required()
+def delete_idea(request, pk):
+    if request.method == 'DELETE':
+        idea = Idea.objects.get(pk=pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        if idea.es_autor(ciudadano):
+            idea.delete()
+            return HttpResponse('Deleted')
+        else:
+            return HttpResponse('Solo un autor puede eliminar una idea.', status=403)
+
+
+@csrf_exempt
+@login_required()
+def agregar_autor(request, pk):
+    if request.method == 'PUT':
+        idea = Idea.objects.get(pk=pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        if idea.es_autor(ciudadano):
+            data = json.loads(request.body)
+            nuevo_autor = Ciudadano.objects.get(pk=data["autor_id"])
+            idea.agregar_autor(nuevo_autor)
+            idea.save()
+            return JsonResponse(idea.serialize(request=request))
+        else:
+            return HttpResponse('Solo un autor puede agregar otro autor.', status=403)
+
+@csrf_exempt
+@login_required()
+def votar(request, pk):
+    idea = Idea.objects.get(pk=pk)
+    ciudadano = Ciudadano.objects.get(email=request.user.username)
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        try:
+            voto = Voto.objects.get(ciudadano = ciudadano, idea=idea)
+            voto.voto = data['voto'][0].upper()
+            voto.comentario = data['comentario']
+        except ObjectDoesNotExist:
+            voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'])
+        voto.save()
+        return JsonResponse(voto.serialize())
+    elif request.method == 'DELETE':
+        try:
+            voto_existente = Voto.objects.get(ciudadano = ciudadano, idea=idea)
+            voto_existente.delete()
+            return HttpResponse('Deleted')
+        except ObjectDoesNotExist:
+            return HttpResponse('Idea no votada previamente', status=400)
+
+
 
 def partidos(request):
     partidos = Partido.objects.all()

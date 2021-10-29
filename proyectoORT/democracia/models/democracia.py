@@ -25,17 +25,39 @@ class Distrito(models.Model):
     def __str__(self):
         return self.nombre
 
+class Voto(models.Model):
+    ciudadano = models.ForeignKey('Ciudadano', on_delete=models.CASCADE)
+    idea = models.ForeignKey('Idea', on_delete=models.CASCADE)
+    voto = models.CharField(max_length=1, choices=[('A', 'Afirmativo'), ('N', 'Negativo')])
+    comentario = models.CharField(max_length=1024, default='')
+
+    def serialize(self):
+        return {
+            'id': self.pk,
+            'ciudadano': self.ciudadano.nombre,
+            'idea': self.idea.titulo,
+            'voto': 'Afirmativo' if self.voto == 'A' else 'Negativo',
+            'comentario': self.comentario
+        }
+
+    def __str__(self):
+        return '{} [{}] {}'.format(self.idea.titulo, self.ciudadano.nombre, 'Afirmativo' if self.voto == 'A' else 'Negativo')
+
 class Idea(models.Model):
     titulo = models.CharField(max_length=128)
     fechaPublicacion = models.DateTimeField()
     contenido = models.TextField(max_length=1024)
-    votosPositivos = models.IntegerField(default=0)
-    votosNegativos = models.IntegerField(default=0)
     categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None, blank=True)
     autores = models.ManyToManyField('Ciudadano')
     
+    def votos_positivos(self):
+        return Voto.objects.filter(idea=self, voto='A').count()
+
+    def votos_negativos(self):
+        return Voto.objects.filter(idea=self, voto='N').count()
+
     def total_votos(self):
-        return self.votosNegativos + self.votosPositivos
+        return self.votos_negativos() + self.votos_positivos()
 
     def serialize(self, request=None):
         if request: 
@@ -52,8 +74,8 @@ class Idea(models.Model):
             'titulo': self.titulo,
             'fechaPublicacion': self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'),
             'contenido': self.contenido,
-            'votosPositivos': self.votosPositivos,
-            'votosNegativos': self.votosNegativos,
+            'votosPositivos': self.votos_positivos(),
+            'votosNegativos': self.votos_negativos(),
             'categoria': self.categoria.nombre if self.categoria else None,
             'autores': self.get_autores(serialized=True),
             'es_autor': es_autor,
@@ -62,7 +84,7 @@ class Idea(models.Model):
         }
     
     def __str__(self):
-        return "[{}] {} {}/{}".format(self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'), self.titulo, self.votosPositivos, self.votosNegativos)
+        return "[{}] {} {}/{}".format(self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'), self.titulo, self.votos_positivos(), self.votos_negativos())
 
     def get_autores(self, serialized=False):
         if serialized:
