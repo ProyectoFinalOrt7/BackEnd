@@ -12,4 +12,7 @@ urlpatterns = [
     path('distritos/', views.distritos,name='distritos'),
     path('categorias/', views.categorias,name='categorias'),
     path('ideas/crear/', views.crear_idea, name='crear_idea'),
+    path('ideas/<pk>/', views.delete_idea, name='delete_idea'),
+    path('ideas/<pk>/autor/', views.agregar_autor, name='agregar_autor'),
+    path('ideas/<pk>/votar/', views.votar, name='votar'),
 ]
