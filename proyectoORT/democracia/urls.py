@@ -15,4 +15,5 @@ urlpatterns = [
     path('ideas/<pk>/', views.delete_idea, name='delete_idea'),
     path('ideas/<pk>/autor/', views.agregar_autor, name='agregar_autor'),
     path('ideas/<pk>/votar/', views.votar, name='votar'),
+    path('merge/search/', views.merge_search, name='merge_search'),
 ]

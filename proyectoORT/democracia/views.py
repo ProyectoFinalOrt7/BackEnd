@@ -135,7 +135,14 @@ def votar(request, pk):
         except ObjectDoesNotExist:
             return HttpResponse('Idea no votada previamente', status=400)
 
-
+@csrf_exempt
+@login_required()
+def merge_search(request):
+    ideas = list(Idea.objects.all())
+    if request.GET.get("ideaid"):
+        idea_search = [idea for idea in ideas if idea.id == int(request.GET.get("ideaid"))]
+        ideas = [idea for idea in ideas if idea.categoria.nombre == idea_search.categoria.nombre]
+    return JsonResponse([idea.serialize() for idea in ideas], safe=False)
 
 def partidos(request):
     partidos = Partido.objects.all()
