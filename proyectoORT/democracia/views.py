@@ -140,9 +140,9 @@ def votar(request, pk):
 def merge_search(request):
     ideas = list(Idea.objects.all())
     if request.GET.get("ideaid"):
-        idea_search = [idea for idea in ideas if idea.id == int(request.GET.get("ideaid"))]
-        ideas = [idea for idea in ideas if idea.categoria.nombre == idea_search.categoria.nombre]
-    return JsonResponse([idea.serialize() for idea in ideas], safe=False)
+        idea_search = Idea.objects.get(pk=int(request.GET.get("ideaid")))
+        ideas = [idea for idea in ideas if idea.categoria is not None and idea.categoria.nombre == idea_search.categoria.nombre and idea.pk != idea_search.pk]
+    return JsonResponse([idea.serialize(request=request) for idea in ideas], safe=False)
 
 def partidos(request):
     partidos = Partido.objects.all()
