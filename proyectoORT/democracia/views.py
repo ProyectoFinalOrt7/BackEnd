@@ -96,6 +96,16 @@ def delete_idea(request, pk):
         else:
             return HttpResponse('Solo un autor puede eliminar una idea.', status=403)
 
+@csrf_exempt
+@login_required()
+def autores(request):
+    if request.GET.get("query"):
+        ciudadanos = list(Ciudadano.objects.all())
+        ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos if request.GET.get("query").lower() in ciudadano.nombre.lower()]
+        return JsonResponse(ciudadanos, safe=False)
+    else:
+        return HttpResponse('Debe incluir el parametro query en la request.', status=400)
+
 
 @csrf_exempt
 @login_required()
@@ -126,14 +136,14 @@ def votar(request, pk):
         except ObjectDoesNotExist:
             voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'])
         voto.save()
-        return JsonResponse(voto.serialize())
     elif request.method == 'DELETE':
         try:
             voto_existente = Voto.objects.get(ciudadano = ciudadano, idea=idea)
             voto_existente.delete()
-            return HttpResponse('Deleted')
+            return JsonResponse(idea.serialize())
         except ObjectDoesNotExist:
-            return HttpResponse('Idea no votada previamente', status=400)
+            pass
+    return JsonResponse(idea.serialize())
 
 @csrf_exempt
 @login_required()
