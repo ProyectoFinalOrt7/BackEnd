@@ -99,12 +99,12 @@ def delete_idea(request, pk):
 @csrf_exempt
 @login_required()
 def autores(request):
+    ciudadanos = list(Ciudadano.objects.all())
     if request.GET.get("query"):
-        ciudadanos = list(Ciudadano.objects.all())
         ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos if request.GET.get("query").lower() in ciudadano.nombre.lower()]
-        return JsonResponse(ciudadanos, safe=False)
     else:
-        return HttpResponse('Debe incluir el parametro query en la request.', status=400)
+        ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos]
+    return JsonResponse(ciudadanos, safe=False)
 
 
 @csrf_exempt
@@ -144,6 +144,13 @@ def votar(request, pk):
         except ObjectDoesNotExist:
             pass
     return JsonResponse(idea.serialize())
+
+@csrf_exempt
+@login_required()
+def votos(request, pk):
+    idea = Idea.objects.get(pk=pk)
+    votos = Voto.objects.filter(idea=idea).all()
+    return JsonResponse(idea.serialize(request=request, votos=votos))
 
 @csrf_exempt
 @login_required()

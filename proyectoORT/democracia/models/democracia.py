@@ -34,8 +34,7 @@ class Voto(models.Model):
     def serialize(self):
         return {
             'id': self.pk,
-            'ciudadano': self.ciudadano.nombre,
-            'idea': self.idea.titulo,
+            'ciudadano': self.ciudadano.serialize(compact=True),
             'voto': 'Afirmativo' if self.voto == 'A' else 'Negativo',
             'comentario': self.comentario
         }
@@ -59,7 +58,7 @@ class Idea(models.Model):
     def total_votos(self):
         return self.votos_negativos() + self.votos_positivos()
 
-    def serialize(self, request=None):
+    def serialize(self, request=None, votos=False):
         if request: 
             ciudadano = Ciudadano.objects.get(email=request.user.username)
             es_autor = self.es_autor(ciudadano)
@@ -69,19 +68,23 @@ class Idea(models.Model):
             es_autor = None
             voto_a_favor = None
             voto_en_contra = None
-        return {
+        serialized = {
             'id': self.pk,
             'titulo': self.titulo,
             'fechaPublicacion': self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'),
             'contenido': self.contenido,
             'votosPositivos': self.votos_positivos(),
             'votosNegativos': self.votos_negativos(),
+            'votosTotales': self.votos_positivos() - self.votos_negativos(),
             'categoria': self.categoria.nombre if self.categoria else None,
             'autores': self.get_autores(serialized=True),
             'es_autor': es_autor,
             'voto_a_favor': voto_a_favor,
             'voto_en_contra': voto_en_contra
         }
+        if votos:
+            serialized["votos"] = [voto.serialize() for voto in votos]
+        return serialized
     
     def __str__(self):
         return "[{}] {} {}/{}".format(self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'), self.titulo, self.votos_positivos(), self.votos_negativos())
