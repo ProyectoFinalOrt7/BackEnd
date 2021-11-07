@@ -180,6 +180,8 @@ def crear_encuesta(request, idea_pk):
     if request.method == 'POST':
         idea = Idea.objects.get(pk=idea_pk)
         ciudadano = Ciudadano.objects.get(email=request.user.username)
+        if not idea.es_autor(ciudadano):
+            return HttpResponse('Solo un autor puede crear una encuesta en la idea.', status=403)
         data = json.loads(request.body)
         if 'opciones' not in data:
             return HttpResponse('Se debe enviar la lista de opciones en el body', status=400)
