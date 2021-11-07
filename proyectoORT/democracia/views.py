@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
-from .models.democracia import Categoria, Partido, Distrito, Idea, Voto
+from .models.democracia import Categoria, Encuesta, OpcionEncuesta, Partido, Distrito, Idea, Voto, VotoEncuesta
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import BadRequest, ObjectDoesNotExist
 import json
@@ -173,3 +173,69 @@ def distritos(request):
 def categorias(request):
     categorias = Categoria.objects.all()
     return JsonResponse([categoria.serialize() for categoria in categorias], safe=False)
+
+@csrf_exempt
+@login_required()
+def crear_encuesta(request, idea_pk):
+    if request.method == 'POST':
+        idea = Idea.objects.get(pk=idea_pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        data = json.loads(request.body)
+        if 'opciones' not in data:
+            return HttpResponse('Se debe enviar la lista de opciones en el body', status=400)
+        if len(data['opciones']) < 2:
+            return HttpResponse('Se deben enviar al menos dos opciones en una encuesta', status=400)
+        if 'pregunta' not in data:
+            return HttpResponse('Se debe enviar la pregunta en el body', status=400)
+        encuesta = Encuesta(pregunta = data['pregunta'], idea = idea, autor = ciudadano)
+        encuesta.save()
+        for opcion in data['opciones']:
+            new_opcion = OpcionEncuesta(opcion = opcion, encuesta = encuesta)
+            new_opcion.save()
+        return JsonResponse(encuesta.serialize(request=request))
+
+@csrf_exempt
+@login_required()
+def votar_encuesta(request, idea_pk, encuesta_pk, opcion_pk):
+    if request.method == 'PUT':
+        encuesta = Encuesta.objects.get(pk=encuesta_pk)
+        opcion = OpcionEncuesta.objects.get(pk=opcion_pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        try:
+            voto_existente = VotoEncuesta.objects.get(encuesta=encuesta, ciudadano=ciudadano)
+            if voto_existente.opcion.pk != opcion_pk:
+                voto_existente.delete()
+                new_voto = VotoEncuesta(encuesta=encuesta, ciudadano=ciudadano, opcion=opcion)
+                new_voto.save()
+        except ObjectDoesNotExist:
+            new_voto = VotoEncuesta(encuesta=encuesta, ciudadano=ciudadano, opcion=opcion)
+            new_voto.save()
+        return JsonResponse(encuesta.serialize(request=request))
+
+@csrf_exempt
+@login_required()
+def eliminar_voto_encuesta(request, idea_pk, encuesta_pk):
+    if request.method == 'DELETE':
+        encuesta = Encuesta.objects.get(pk=encuesta_pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        try:
+            voto_existente = VotoEncuesta.objects.get(encuesta=encuesta, ciudadano=ciudadano)
+            voto_existente.delete()
+        except ObjectDoesNotExist:
+            pass
+        return JsonResponse(encuesta.serialize(request=request))
+
+
+@csrf_exempt
+@login_required()
+def ver_encuestas(request, idea_pk):
+    idea = Idea.objects.get(pk=idea_pk)
+    encuestas = list(Encuesta.objects.filter(idea=idea))
+    return JsonResponse([encuesta.serialize(request=request) for encuesta in encuestas], safe=False)
+
+@csrf_exempt
+@login_required()
+def encuesta(request, idea_pk, encuesta_pk):
+    idea = Idea.objects.get(pk=idea_pk)
+    encuesta = Encuesta.objects.get(idea=idea, pk=encuesta_pk)
+    return JsonResponse(encuesta.serialize(request=request))

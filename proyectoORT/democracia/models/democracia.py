@@ -117,3 +117,46 @@ class Categoria(models.Model):
 
     def __str__(self):
         return self.nombre
+
+class VotoEncuesta(models.Model):
+    ciudadano = models.ForeignKey(Ciudadano, on_delete=models.CASCADE)
+    encuesta = models.ForeignKey('Encuesta', on_delete=models.CASCADE)
+    opcion = models.ForeignKey('OpcionEncuesta', on_delete=models.CASCADE)
+
+class OpcionEncuesta(models.Model):
+    opcion = models.CharField(max_length=128)
+    encuesta = models.ForeignKey('Encuesta', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.encuesta.pregunta + " : " + self.opcion
+
+    def serialize(self, request=None):
+        votos = VotoEncuesta.objects.filter(opcion=self).count()
+        if request:
+            ciudadano = Ciudadano.objects.get(email=request.user.username)
+            votada = VotoEncuesta.objects.filter(opcion=self, ciudadano=ciudadano).count() == 1
+        else:
+            votada = None
+        return {
+            'id': self.pk,
+            'opcion': self.opcion,
+            'votos': votos,
+            'votada': votada
+        }
+
+class Encuesta(models.Model):
+    pregunta = models.CharField(max_length=512)
+    idea = models.ForeignKey(Idea, on_delete=models.CASCADE)
+    autor = models.ForeignKey(Ciudadano, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.pregunta
+
+    def serialize(self, request=None):
+        opciones = list(OpcionEncuesta.objects.filter(encuesta=self))
+        return {
+            'id': self.pk,
+            'pregunta': self.pregunta,
+            'autor': self.autor.serialize(compact=True),
+            'opciones': [opcion.serialize(request=request) for opcion in opciones]
+        }
