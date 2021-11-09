@@ -100,10 +100,17 @@ def delete_idea(request, pk):
 @login_required()
 def autores(request):
     ciudadanos = list(Ciudadano.objects.all())
+    if request.GET.get("idea_id"):
+        idea = Idea.objects.get(pk=int(request.GET.get("idea_id")))
+        idea_autores_ids = [ autor.pk for autor in idea.get_autores() ]
+        ciudadanos = [ciudadano for ciudadano in ciudadanos if  ciudadano.pk not in idea_autores_ids]
+
     if request.GET.get("query"):
         ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos if request.GET.get("query").lower() in ciudadano.nombre.lower()]
     else:
         ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos]
+
+
     return JsonResponse(ciudadanos, safe=False)
 
 
@@ -115,7 +122,7 @@ def agregar_autor(request, pk):
         ciudadano = Ciudadano.objects.get(email=request.user.username)
         if idea.es_autor(ciudadano):
             data = json.loads(request.body)
-            nuevo_autor = Ciudadano.objects.get(pk=data["autor_id"])
+            nuevo_autor = Ciudadano.objects.get(pk=data["id"])
             idea.agregar_autor(nuevo_autor)
             idea.save()
             return JsonResponse(idea.serialize(request=request))
@@ -143,7 +150,7 @@ def votar(request, pk):
             return JsonResponse(idea.serialize())
         except ObjectDoesNotExist:
             pass
-    return JsonResponse(idea.serialize())
+    return JsonResponse(idea.serialize(request=request))
 
 @csrf_exempt
 @login_required()
