@@ -110,7 +110,6 @@ def autores(request):
     else:
         ciudadanos = [ciudadano.serialize(compact=True) for ciudadano in ciudadanos]
 
-
     return JsonResponse(ciudadanos, safe=False)
 
 
@@ -147,7 +146,6 @@ def votar(request, pk):
         try:
             voto_existente = Voto.objects.get(ciudadano = ciudadano, idea=idea)
             voto_existente.delete()
-            return JsonResponse(idea.serialize())
         except ObjectDoesNotExist:
             pass
     return JsonResponse(idea.serialize(request=request))

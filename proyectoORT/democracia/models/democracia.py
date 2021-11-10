@@ -101,10 +101,10 @@ class Idea(models.Model):
         return ciudadano in self.get_autores()
 
     def voto_a_favor(self, ciudadano):
-        return False
+        return Voto.objects.filter(voto='A', ciudadano=ciudadano, idea=self).count() == 1
     
     def voto_en_contra(self, ciudadano):
-        return False
+        return Voto.objects.filter(voto='N', ciudadano=ciudadano, idea=self).count() == 1
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=64)
