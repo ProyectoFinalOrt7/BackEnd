@@ -30,13 +30,15 @@ class Voto(models.Model):
     idea = models.ForeignKey('Idea', on_delete=models.CASCADE)
     voto = models.CharField(max_length=1, choices=[('A', 'Afirmativo'), ('N', 'Negativo')])
     comentario = models.CharField(max_length=1024, default='')
+    fecha = models.DateTimeField(null=True, blank=True)
 
     def serialize(self):
         return {
             'id': self.pk,
             'ciudadano': self.ciudadano.serialize(compact=True),
             'voto': 'Afirmativo' if self.voto == 'A' else 'Negativo',
-            'comentario': self.comentario
+            'comentario': self.comentario,
+            'fecha': self.fecha.strftime('%Y-%m-%d %H:%M') if self.fecha else None
         }
 
     def __str__(self):

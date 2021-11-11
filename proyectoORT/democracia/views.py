@@ -134,13 +134,15 @@ def votar(request, pk):
     idea = Idea.objects.get(pk=pk)
     ciudadano = Ciudadano.objects.get(email=request.user.username)
     if request.method == 'PUT':
+        now = datetime.datetime.now()
         data = json.loads(request.body)
         try:
             voto = Voto.objects.get(ciudadano = ciudadano, idea=idea)
             voto.voto = data['voto'][0].upper()
             voto.comentario = data['comentario']
+            voto.fecha = now
         except ObjectDoesNotExist:
-            voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'])
+            voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'], fecha = now)
         voto.save()
     elif request.method == 'DELETE':
         try:
@@ -148,14 +150,15 @@ def votar(request, pk):
             voto_existente.delete()
         except ObjectDoesNotExist:
             pass
-    return JsonResponse(idea.serialize(request=request))
+    votos = list(Voto.objects.filter(idea=idea).all())
+    return JsonResponse([voto.serialize() for voto in votos], safe=False)
 
 @csrf_exempt
 @login_required()
 def votos(request, pk):
     idea = Idea.objects.get(pk=pk)
-    votos = Voto.objects.filter(idea=idea).all()
-    return JsonResponse(idea.serialize(request=request, votos=votos))
+    votos = list(Voto.objects.filter(idea=idea).all())
+    return JsonResponse([voto.serialize() for voto in votos], safe=False)
 
 @csrf_exempt
 @login_required()
