@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
 from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
-from .models.democracia import Categoria, Encuesta, OpcionEncuesta, Partido, Distrito, Idea, Voto, VotoEncuesta
+from .models.democracia import Categoria, Encuesta, IdeaMerge, MergeApproval, OpcionEncuesta, Partido, Distrito, Idea, Voto, VotoEncuesta
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import BadRequest, ObjectDoesNotExist
 import json
@@ -53,7 +53,7 @@ def top_ideas(request):
 @csrf_exempt
 @login_required()
 def search_ideas(request):
-    ideas = list(Idea.objects.all())
+    ideas = list(Idea.objects.filter(approved=True))
     if request.GET.get("filtro"):
         ideas = [idea for idea in ideas if request.GET.get("filtro").lower() in idea.titulo.lower()]
     
@@ -134,13 +134,15 @@ def votar(request, pk):
     idea = Idea.objects.get(pk=pk)
     ciudadano = Ciudadano.objects.get(email=request.user.username)
     if request.method == 'PUT':
+        now = datetime.datetime.now()
         data = json.loads(request.body)
         try:
             voto = Voto.objects.get(ciudadano = ciudadano, idea=idea)
             voto.voto = data['voto'][0].upper()
             voto.comentario = data['comentario']
+            voto.fecha = now
         except ObjectDoesNotExist:
-            voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'])
+            voto = Voto(ciudadano = ciudadano, idea = idea, voto = data['voto'][0].upper(), comentario = data['comentario'], fecha = now)
         voto.save()
     elif request.method == 'DELETE':
         try:
@@ -148,14 +150,15 @@ def votar(request, pk):
             voto_existente.delete()
         except ObjectDoesNotExist:
             pass
-    return JsonResponse(idea.serialize(request=request))
+    votos = list(Voto.objects.filter(idea=idea).all())
+    return JsonResponse([voto.serialize() for voto in votos], safe=False)
 
 @csrf_exempt
 @login_required()
 def votos(request, pk):
     idea = Idea.objects.get(pk=pk)
-    votos = Voto.objects.filter(idea=idea).all()
-    return JsonResponse(idea.serialize(request=request, votos=votos))
+    votos = list(Voto.objects.filter(idea=idea).all())
+    return JsonResponse([voto.serialize() for voto in votos], safe=False)
 
 @csrf_exempt
 @login_required()
@@ -246,3 +249,55 @@ def encuesta(request, idea_pk, encuesta_pk):
     idea = Idea.objects.get(pk=idea_pk)
     encuesta = Encuesta.objects.get(idea=idea, pk=encuesta_pk)
     return JsonResponse(encuesta.serialize(request=request))
+
+
+@csrf_exempt
+@login_required()
+def merge(request):
+    ciudadano = Ciudadano.objects.get(email=request.user.username)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        if 'idea_a' not in data:
+            return HttpResponse('Se debe enviar idea_a en el body', status=400)
+        if 'idea_b' not in data:
+            return HttpResponse('Se debe enviar idea_b en el body', status=400)
+        ideaA = Idea.objects.get(pk=data['idea_a'])
+        ideaB = Idea.objects.get(pk=data['idea_b'])
+        now = datetime.datetime.now()
+        if 'idea_result' in data:
+            categorias = Categoria.objects.all()
+            categoria = [categoria for categoria in categorias if categoria.nombre.lower() == data['idea_result'].get("categoria").lower()][0]
+            new_idea = Idea (   titulo = data['idea_result'].get('titulo'), 
+                                fechaPublicacion = datetime.datetime.now(), 
+                                contenido = data['idea_result'].get('contenido'),
+                                categoria = categoria,
+                                approved = False
+                        )
+            new_idea.save()
+            new_idea.agregar_autor(ciudadano)
+            new_idea.save()
+            new_merge = IdeaMerge(ideaA=ideaA, ideaB=ideaB, fecha=now, result=new_idea)
+        else:
+            new_merge = IdeaMerge(ideaA=ideaA, ideaB=ideaB, fecha=now)
+        new_merge.save()
+        return JsonResponse(new_merge.serialize(request=request))
+    else:
+        all_merges = IdeaMerge.objects.all()
+        authored_merges = [idea_merge for idea_merge in all_merges if ciudadano.pk in [autor.pk for autor in idea_merge.get_autores()]]
+        return JsonResponse([authored_merge.serialize(request=request) for authored_merge in authored_merges], safe=False)
+
+@csrf_exempt
+@login_required()
+def approve_merge(request, pk):
+    if request.method == 'PUT':
+        merge = IdeaMerge.objects.get(pk=pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        if MergeApproval.objects.filter(merge=merge, ciudadano=ciudadano).count() == 0:
+            new_approval = MergeApproval(merge=merge, ciudadano=ciudadano)
+            new_approval.save()
+        if merge.result and merge.is_approved():
+            merge.result.approved = True
+            merge.result.save()
+        return JsonResponse(merge.serialize(request=request))
+    
+

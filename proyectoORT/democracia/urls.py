@@ -23,4 +23,6 @@ urlpatterns = [
     path('ideas/<idea_pk>/encuestas/<encuesta_pk>/votar/', views.eliminar_voto_encuesta, name='eliminar_voto_encuesta'),
     path('ideas/<idea_pk>/encuestas/', views.ver_encuestas, name='ver_encuestas'),
     path('ideas/<idea_pk>/encuestas/<encuesta_pk>/', views.encuesta, name='encuesta'),
+    path('merge/', views.merge, name='merge'),
+    path('merge/<pk>/approve/', views.approve_merge, name='approve_merge'),
 ]
