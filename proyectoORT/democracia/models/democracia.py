@@ -50,6 +50,7 @@ class Idea(models.Model):
     contenido = models.TextField(max_length=1024)
     categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None, blank=True)
     autores = models.ManyToManyField('Ciudadano')
+    approved = models.BooleanField(default=True)
     
     def votos_positivos(self):
         return Voto.objects.filter(idea=self, voto='A').count()
@@ -82,7 +83,8 @@ class Idea(models.Model):
             'autores': self.get_autores(serialized=True),
             'es_autor': es_autor,
             'voto_a_favor': voto_a_favor,
-            'voto_en_contra': voto_en_contra
+            'voto_en_contra': voto_en_contra,
+            'aprobada': self.approved
         }
         if votos:
             serialized["votos"] = [voto.serialize() for voto in votos]
@@ -161,4 +163,48 @@ class Encuesta(models.Model):
             'pregunta': self.pregunta,
             'autor': self.autor.serialize(compact=True),
             'opciones': [opcion.serialize(request=request) for opcion in opciones]
+        }
+
+class MergeApproval(models.Model):
+    ciudadano = models.ForeignKey(Ciudadano, on_delete=models.CASCADE)
+    merge = models.ForeignKey('IdeaMerge', on_delete=models.CASCADE)
+
+class IdeaMerge(models.Model):
+    ideaA = models.ForeignKey(Idea, on_delete=models.SET_NULL, null=True, related_name='idea_a')
+    ideaB = models.ForeignKey(Idea, on_delete=models.SET_NULL, null=True, related_name='idea_b')
+    result = models.ForeignKey(Idea, on_delete=models.CASCADE, null=True)
+    fecha = models.DateTimeField()
+
+    def get_autores(self):
+        autoresA = self.ideaA.get_autores()
+        autoresB = self.ideaB.get_autores()
+        merge_autores = autoresA
+        for autor in autoresB:
+            if autor.pk not in [ autorA.pk for autorA in autoresA ]:
+                merge_autores.append(autor)
+        return merge_autores
+
+    def approvals(self):
+        autores = self.get_autores()
+        return [ {
+            'ciudadano': autor.serialize(compact=True),
+            'approved': True if MergeApproval.objects.filter(ciudadano=autor, merge=self).count() == 1 else False
+        } for autor in autores ]
+    
+    def is_approved(self):
+        return all([approval['approved'] for approval in self.approvals()])
+
+    def __str__(self):
+        return "{} + {} = {}".format(str(self.ideaA), str(self.ideaB), str(self.result))
+
+    def serialize(self, request=None):
+        approvals = self.approvals()
+        return {
+            'id': self.pk,
+            'ideaA': self.ideaA.serialize(request=request) if self.ideaA else None,
+            'ideaB': self.ideaB.serialize(request=request) if self.ideaB else None,
+            'result': self.result.serialize(request=request) if self.result else None,
+            'fecha': self.fecha.strftime('%Y-%m-%d %H:%M'),
+            'approvals': approvals,
+            'approved': all([approval['approved'] for approval in approvals])
         }
