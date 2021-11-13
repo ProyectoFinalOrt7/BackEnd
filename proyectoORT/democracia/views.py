@@ -150,8 +150,7 @@ def votar(request, pk):
             voto_existente.delete()
         except ObjectDoesNotExist:
             pass
-    votos = list(Voto.objects.filter(idea=idea).all())
-    return JsonResponse([voto.serialize() for voto in votos], safe=False)
+    return JsonResponse(idea.serialize(request=request))
 
 @csrf_exempt
 @login_required()
