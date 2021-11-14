@@ -45,7 +45,7 @@ def user_detail(request):
 @csrf_exempt
 @login_required()
 def top_ideas(request):
-    ideas = list(Idea.objects.all())
+    ideas = list(Idea.objects.filter(approved=True))
     ideas.sort(key=lambda x: x.total_votos(), reverse=True)
     ideas_top = ideas[:10]
     return JsonResponse([idea.serialize(request=request) for idea in ideas_top], safe=False)
@@ -162,7 +162,7 @@ def votos(request, pk):
 @csrf_exempt
 @login_required()
 def merge_search(request):
-    ideas = list(Idea.objects.all())
+    ideas = list(Idea.objects.filter(approved=True))
     if request.GET.get("ideaid"):
         idea_search = Idea.objects.get(pk=int(request.GET.get("ideaid")))
         ideas = [idea for idea in ideas if idea.categoria is not None and idea.categoria.nombre == idea_search.categoria.nombre and idea.pk != idea_search.pk]
@@ -279,24 +279,35 @@ def merge(request):
         else:
             new_merge = IdeaMerge(ideaA=ideaA, ideaB=ideaB, fecha=now)
         new_merge.save()
+        new_merge.add_approval(ciudadano)
+        ideaA.merge_pendiente = True
+        ideaA.save()
+        ideaB.merge_pendiente = True
+        ideaB.save()
         return JsonResponse(new_merge.serialize(request=request))
     else:
         all_merges = IdeaMerge.objects.all()
-        authored_merges = [idea_merge for idea_merge in all_merges if ciudadano.pk in [autor.pk for autor in idea_merge.get_autores()]]
+        authored_merges = [idea_merge for idea_merge in all_merges if ciudadano.pk in [autor.pk for autor in idea_merge.get_autores()] and not idea_merge.already_approved(ciudadano)]
         return JsonResponse([authored_merge.serialize(request=request) for authored_merge in authored_merges], safe=False)
 
 @csrf_exempt
 @login_required()
 def approve_merge(request, pk):
     if request.method == 'PUT':
+        data = json.loads(request.body)
         merge = IdeaMerge.objects.get(pk=pk)
         ciudadano = Ciudadano.objects.get(email=request.user.username)
-        if MergeApproval.objects.filter(merge=merge, ciudadano=ciudadano).count() == 0:
-            new_approval = MergeApproval(merge=merge, ciudadano=ciudadano)
-            new_approval.save()
-        if merge.result and merge.is_approved():
-            merge.result.approved = True
-            merge.result.save()
-        return JsonResponse(merge.serialize(request=request))
+        if ciudadano.pk not in [autor.pk for autor in merge.get_autores()]:
+            return HttpResponse("El ciudadano {} no es autor del merge {}".format(ciudadano, pk), status=401)
+        if data['aprobado']:
+            merge.add_approval(ciudadano)
+            return JsonResponse(merge.serialize(request=request))
+        else:
+            merge.ideaA.merge_pendiente = False
+            merge.ideaA.save()
+            merge.ideaB.merge_pendiente = False
+            merge.ideaB.save()
+            merge.delete()
+            return HttpResponse("Merge rechazado")
     
 

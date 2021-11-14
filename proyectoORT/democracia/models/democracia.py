@@ -51,6 +51,7 @@ class Idea(models.Model):
     categoria = models.ForeignKey('Categoria', on_delete=models.SET_NULL, null=True, default=None, blank=True)
     autores = models.ManyToManyField('Ciudadano')
     approved = models.BooleanField(default=True)
+    merge_pendiente = models.BooleanField(default=False)
     
     def votos_positivos(self):
         return Voto.objects.filter(idea=self, voto='A').count()
@@ -59,7 +60,7 @@ class Idea(models.Model):
         return Voto.objects.filter(idea=self, voto='N').count()
 
     def total_votos(self):
-        return self.votos_negativos() + self.votos_positivos()
+        return self.votos_positivos() - self.votos_negativos()
 
     def serialize(self, request=None, votos=False):
         if request: 
@@ -84,7 +85,8 @@ class Idea(models.Model):
             'es_autor': es_autor,
             'voto_a_favor': voto_a_favor,
             'voto_en_contra': voto_en_contra,
-            'aprobada': self.approved
+            'aprobada': self.approved,
+            'merge_pendiente': self.merge_pendiente
         }
         if votos:
             serialized["votos"] = [voto.serialize() for voto in votos]
@@ -208,3 +210,26 @@ class IdeaMerge(models.Model):
             'approvals': approvals,
             'approved': all([approval['approved'] for approval in approvals])
         }
+
+    def already_approved(self, ciudadano):
+        approvals = self.approvals()
+        return ciudadano.pk in [approval['ciudadano']['id'] for approval in approvals if approval['approved']]
+
+    def add_approval(self, ciudadano):
+        if MergeApproval.objects.filter(merge=self, ciudadano=ciudadano).count() == 0:
+            new_approval = MergeApproval(merge=self, ciudadano=ciudadano)
+            new_approval.save()
+        if self.result and self.is_approved():
+            self.result.approved = True
+            self.result.save()
+            self.ideaA.approved = False
+            self.ideaA.save()
+            self.ideaB.approved = False
+            self.ideaB.save()
+            ciudadanos_procesados = []
+            votos_sumados = list(Voto.objects.filter(idea=self.ideaA)) + list(Voto.objects.filter(idea=self.ideaB))
+            for voto in votos_sumados:
+                if voto.ciudadano.pk not in ciudadanos_procesados:
+                    new_voto = Voto(idea=self.result, ciudadano=voto.ciudadano, voto=voto.voto, comentario=voto.comentario, fecha=voto.fecha)
+                    new_voto.save()
+                    ciudadanos_procesados.append(voto.ciudadano.pk)
