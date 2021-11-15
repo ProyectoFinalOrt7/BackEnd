@@ -307,7 +307,8 @@ def approve_merge(request, pk):
             merge.ideaA.save()
             merge.ideaB.merge_pendiente = False
             merge.ideaB.save()
+            serialized_merge = merge.serialize(request=request)
             merge.delete()
-            return HttpResponse("Merge rechazado")
+            return JsonResponse(serialized_merge)
     
 
