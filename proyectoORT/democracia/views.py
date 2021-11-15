@@ -1,7 +1,7 @@
 from json.decoder import JSONDecodeError
 from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
-from proyectoORT.firebase import login_required, serialize_firebase_user
+from proyectoORT.firebase import login_required
 from .models.auth import Ciudadano
 from .models.democracia import Categoria, Encuesta, IdeaMerge, MergeApproval, OpcionEncuesta, Partido, Distrito, Idea, Voto, VotoEncuesta
 from django.views.decorators.csrf import csrf_exempt
