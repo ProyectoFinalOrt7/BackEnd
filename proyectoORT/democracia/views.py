@@ -1,7 +1,7 @@
 from json.decoder import JSONDecodeError
 from django.http import HttpResponse
 from django.http.response import HttpResponseNotAllowed, JsonResponse
-from proyectoORT.firebase import login_required
+from proyectoORT.firebase import login_required, serialize_firebase_user
 from .models.auth import Ciudadano
 from .models.democracia import Categoria, Encuesta, IdeaMerge, MergeApproval, OpcionEncuesta, Partido, Distrito, Idea, Voto, VotoEncuesta
 from django.views.decorators.csrf import csrf_exempt
@@ -296,7 +296,7 @@ def approve_merge(request, pk):
     if request.method == 'PUT':
         data = json.loads(request.body)
         merge = IdeaMerge.objects.get(pk=pk)
-        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        ciudadano = Ciudadano.objects.Nget(email=request.user.username)
         if ciudadano.pk not in [autor.pk for autor in merge.get_autores()]:
             return HttpResponse("El ciudadano {} no es autor del merge {}".format(ciudadano, pk), status=401)
         if data['aprobado']:
@@ -307,7 +307,8 @@ def approve_merge(request, pk):
             merge.ideaA.save()
             merge.ideaB.merge_pendiente = False
             merge.ideaB.save()
+            serialized_merge = merge.serialize(request=request)
             merge.delete()
-            return HttpResponse("Merge rechazado")
+            return JsonResponse(serialized_merge)
     
 
