@@ -296,7 +296,7 @@ def approve_merge(request, pk):
     if request.method == 'PUT':
         data = json.loads(request.body)
         merge = IdeaMerge.objects.get(pk=pk)
-        ciudadano = Ciudadano.objects.Nget(email=request.user.username)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
         if ciudadano.pk not in [autor.pk for autor in merge.get_autores()]:
             return HttpResponse("El ciudadano {} no es autor del merge {}".format(ciudadano, pk), status=401)
         if data['aprobado']:
