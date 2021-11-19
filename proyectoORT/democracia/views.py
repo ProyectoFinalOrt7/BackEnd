@@ -95,6 +95,11 @@ def delete_idea(request, pk):
             return HttpResponse('Deleted')
         else:
             return HttpResponse('Solo un autor puede eliminar una idea.', status=403)
+    else:
+        idea = Idea.objects.get(pk=pk)
+        ciudadano = Ciudadano.objects.get(email=request.user.username)
+        return JsonResponse(idea.serialize(request=request))
+
 
 @csrf_exempt
 @login_required()
