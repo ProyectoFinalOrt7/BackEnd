@@ -177,6 +177,12 @@ class IdeaMerge(models.Model):
     result = models.ForeignKey(Idea, on_delete=models.CASCADE, null=True)
     fecha = models.DateTimeField()
 
+    def calculate_autores(self):
+        self.result.autores.clear()
+        for autor in self.get_autores():
+            self.result.autores.add(autor)
+
+
     def get_autores(self):
         autoresA = self.ideaA.get_autores()
         autoresB = self.ideaB.get_autores()
