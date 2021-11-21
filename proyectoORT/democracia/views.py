@@ -284,6 +284,7 @@ def merge(request):
         else:
             new_merge = IdeaMerge(ideaA=ideaA, ideaB=ideaB, fecha=now)
         new_merge.save()
+        new_merge.calculate_autores()
         new_merge.add_approval(ciudadano)
         ideaA.merge_pendiente = True
         ideaA.save()
