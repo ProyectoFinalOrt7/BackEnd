@@ -170,9 +170,10 @@ def votos(request, pk):
 @login_required()
 def merge_search(request):
     ideas = list(Idea.objects.filter(approved=True))
+    ciudadano = Ciudadano.objects.get(email=request.user.username)
     if request.GET.get("ideaid"):
         idea_search = Idea.objects.get(pk=int(request.GET.get("ideaid")))
-        ideas = [idea for idea in ideas if idea.categoria is not None and idea.categoria.nombre == idea_search.categoria.nombre and idea.pk != idea_search.pk]
+        ideas = [idea for idea in ideas if idea.categoria is not None and idea.categoria.nombre == idea_search.categoria.nombre and idea.pk != idea_search.pk and not idea.es_autor(ciudadano)]
     return JsonResponse([idea.serialize(request=request) for idea in ideas], safe=False)
 
 def partidos(request):
