@@ -278,7 +278,7 @@ def merge(request):
                                 contenido = data['idea_result'].get('contenido'),
                                 categoria = categoria,
                                 approved = False,
-                                subtitulo = data['subtitulo']
+                                subtitulo = data['idea_result']['subtitulo']
                         )
             new_idea.save()
             new_idea.agregar_autor(ciudadano)
