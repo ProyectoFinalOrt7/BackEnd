@@ -45,10 +45,11 @@ def user_detail(request):
 @csrf_exempt
 @login_required()
 def top_ideas(request):
+    ciudadano = Ciudadano.objects.get(email=request.user.username)
     ideas = list(Idea.objects.filter(approved=True))
     ideas.sort(key=lambda x: x.total_votos(), reverse=True)
     ideas_top = ideas[:10]
-    return JsonResponse([idea.serialize(request=request) for idea in ideas_top], safe=False)
+    return JsonResponse([idea.serialize(request=request) for idea in ideas_top if not idea.es_autor(ciudadano)], safe=False)
 
 @csrf_exempt
 @login_required()
@@ -76,7 +77,8 @@ def crear_idea(request):
         idea = Idea (   titulo = data.get('titulo'), 
                         fechaPublicacion = datetime.datetime.now(), 
                         contenido = data.get('contenido'),
-                        categoria = categoria
+                        categoria = categoria,
+                        subtitulo = data.get('subtitulo')
                     )
         idea.save()
         idea.agregar_autor(ciudadano)
@@ -275,7 +277,8 @@ def merge(request):
                                 fechaPublicacion = datetime.datetime.now(), 
                                 contenido = data['idea_result'].get('contenido'),
                                 categoria = categoria,
-                                approved = False
+                                approved = False,
+                                subtitulo = data['subtitulo']
                         )
             new_idea.save()
             new_idea.agregar_autor(ciudadano)
