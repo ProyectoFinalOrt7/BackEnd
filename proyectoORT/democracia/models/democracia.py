@@ -52,6 +52,7 @@ class Idea(models.Model):
     autores = models.ManyToManyField('Ciudadano')
     approved = models.BooleanField(default=True)
     merge_pendiente = models.BooleanField(default=False)
+    subtitulo = models.CharField(max_length=256, default='')
     
     def votos_positivos(self):
         return Voto.objects.filter(idea=self, voto='A').count()
@@ -75,6 +76,7 @@ class Idea(models.Model):
         serialized = {
             'id': self.pk,
             'titulo': self.titulo,
+            'subtitulo': self.subtitulo,
             'fechaPublicacion': self.fechaPublicacion.strftime('%Y-%m-%d %H:%M'),
             'contenido': self.contenido,
             'votosPositivos': self.votos_positivos(),
