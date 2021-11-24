@@ -84,7 +84,7 @@ def login_required():
                     fb_user = auth.verify_id_token(value)
                     request.user = get_user_from_firebase(fb_user)
                 elif auth_method == 'Basic':
-                    username, password = base64.b64decode(value).decode('utf-8').split(':')
+                    username, password = base64.b64decode(value).decode('latin1').split(':')
                     user = authenticate(request, username=username, password=password)
                     if user is not None:
                         request.user = user
